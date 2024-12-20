@@ -1,9 +1,11 @@
 {% macro render_field(field) %}
-  {{ field.label }}
-  {{ field(**kwargs) |safe }}
+  {% if field.type != 'HiddenField' %}
+    {{ field.label }}
+  {% endif %}
+  {{ field(class_="form-control", **kwargs) | safe }}
   {% if field.errors %}
     {% for error in field.errors %}
-      <span class="help-incline">{{ error }}</span>
+      <small class="error">{{ error }}</small>
     {% endfor %}
   {% endif %}
 {% endmacro %}

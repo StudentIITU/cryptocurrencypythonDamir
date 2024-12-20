@@ -1,0 +1,755 @@
+/* Custom Properties */
+:root {
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --primary-rgb: 59, 130, 246;
+    --surface: #1e293b;
+    --surface-dark: #0f172a;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-tertiary: #64748b;
+    --success: #22c55e;
+    --warning: #eab308;
+    --error: #ef4444;
+    --background-gradient: linear-gradient(135deg, #1e293b, #0f172a);
+    --card-gradient: linear-gradient(160deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
+    --crypto-green: #22c55e;
+    --crypto-red: #ef4444;
+}
+
+/* Base Styles */
+body {
+    background: var(--background-gradient);
+    color: var(--text-primary);
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* Navigation Styles */
+nav {
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 1rem 0;
+}
+
+nav .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Also add these missing card styles */
+article {
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.25rem;  /* Slightly reduced padding */
+    display: flex;
+    flex-direction: column;
+}
+
+
+article::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--card-gradient);
+    pointer-events: none;
+    z-index: 1;
+}
+
+article > * {
+    position: relative;
+    z-index: 2;
+}
+
+.nav-brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(45deg, var(--primary), #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    padding: 0.5rem 0;
+    text-decoration: none;
+}
+
+nav ul {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+nav ul li {
+    list-style: none;
+}
+
+nav ul li a {
+    color: var(--text-primary);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+nav ul li a:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface-dark) 100%);
+    padding: 4rem 0;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 3rem;
+}
+
+.hero-section hgroup {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.hero-section h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(45deg, var(--primary) 0%, #60a5fa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1rem;
+}
+
+.hero-section h2 {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+    line-height: 1.6;
+}
+
+/* Features Grid */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin: 3rem 0;
+}
+
+.features-grid article {
+    text-align: center;
+    padding: 2rem;
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    transition: transform 0.2s;
+}
+
+.features-grid article:hover {
+    transform: translateY(-5px);
+}
+
+.features-grid i {
+    color: var(--primary);
+    margin-bottom: 1.5rem;
+}
+
+.features-grid h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.features-grid p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* Auth Container */
+.auth-container {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, var(--primary), #60a5fa);
+}
+
+.auth-container hgroup {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-container h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.auth-container h2 {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.form-group {
+    position: relative;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    padding-left: 2.5rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.form-group input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    outline: none;
+}
+
+.form-group i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+}
+
+/* Buttons */
+button,
+[role="button"] {
+    padding: 0.875rem 1.5rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+button:hover,
+[role="button"]:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+button.outline,
+[role="button"].outline {
+    background: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+}
+
+button.outline:hover,
+[role="button"].outline:hover {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+/* Alert Styles */
+.alert {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.alert i {
+    font-size: 1.25rem;
+}
+
+.alert-success {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    color: var(--success);
+}
+
+.alert-danger {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: var(--error);
+}
+
+/* Dashboard Specific Styles */
+.currency {
+    font-size: 1.25rem;
+    color: #64748b;
+}
+
+/* Dashboard Grid Layout */
+.dashboard-container {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.dashboard-container .grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+    margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .dashboard-container .grid {
+        grid-template-columns: minmax(300px, 1fr) 2fr;
+    }
+}
+
+/* Status Badge Styles */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-badge.completed {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+}
+
+.status-badge.pending {
+    background: rgba(234, 179, 8, 0.1);
+    color: #eab308;
+}
+
+.status-badge.failed {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--crypto-red);
+}
+
+/* Balance Card Styles */
+.balance-card {
+    padding: 2rem;
+}
+
+
+.balance-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.balance-amount {
+    font-size: 2.25rem;  /* Further reduced */
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.balance-usd {
+    font-size: 1rem;
+    color: #64748b;
+    margin: 0.5rem 0 1.5rem 0;
+}
+
+.balance-actions {
+    display: flex;
+    gap: 0.75rem;  /* Reduced gap */
+    margin-top: 1rem;
+    width: 100%;    /* Ensure container takes full width */
+
+}
+
+.balance-actions a[role="button"] {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;  /* Smaller icons in buttons */
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    white-space: nowrap;  /* Prevent text wrapping */
+}
+
+/* Chart Card Styles */
+.chart-card {
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+.chart-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.timeframe-selector {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.timeframe-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+}
+
+.timeframe-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.timeframe-btn.active {
+    background: var(--primary);
+    color: white;
+}
+
+.chart-container {
+    position: relative;
+    height: 250px !important; /* Fixed height */
+    margin: 1rem 0;
+    z-index: 1;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    border-radius: 8px;
+}
+
+.loading-overlay i {
+    color: var(--primary);
+    font-size: 1.5rem;
+}
+
+/* Transaction Card Styles */
+.transactions-card {
+    padding: 1.5rem;
+}
+
+.transactions-card header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
+    margin-bottom: 1.5rem;
+}
+
+.transactions-card footer {
+    padding: 0.75rem 0 0 0;
+    border-top: none;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.transactions-card footer a[role="button"] {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    color: #38bdf8;
+    border-color: #38bdf8;
+    background: transparent;
+}
+
+.transactions-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-primary); /* Make text white instead of grey */
+}
+
+.transactions-header i {
+    font-size: 1.25rem;
+    color: #38bdf8;
+}
+
+.transactions-actions {
+    position: relative; /* Reset position */
+    margin-left: auto;
+}
+
+
+.icon-button {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #38bdf8;
+    background: transparent;
+    border-radius: 6px;
+    padding: 0;
+    position: static; /* Reset position */
+}
+
+.icon-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.transaction-type {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.transaction-type i {
+    font-size: 1rem;
+    position: static; /* Reset position */
+}
+
+
+.transaction-type.received {
+    color: #22c55e;
+}
+
+.transaction-type.sent {
+    color: #ef4444;
+}
+
+/* Card Header Styles */
+article header {
+    background: transparent !important; /* Force transparent background */
+    border: none;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+article h3 {
+    color: var(--text-primary) !important; /* Force white color */
+}
+
+article header i {
+    font-size: 1.25rem;
+    color: #38bdf8;
+}
+
+
+article header h2,
+article header h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+article footer {
+    background: transparent !important;
+    border: none;
+    padding-top: 1rem;
+    margin-top: 0.5rem;
+    color: var(--text-secondary);
+    z-index: 2;
+}
+
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 0;
+}
+
+
+table th {
+    color: #64748b; /* Keep headers slightly dimmed */
+    font-weight: 500;
+    padding: 1rem 0;
+}
+
+table td {
+    color: var(--text-primary); /* Make text white */
+    padding: 1rem 0;
+}
+
+table tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+
+th, td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+th {
+    color: #64748b;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+td {
+    padding: 1rem 0;
+    font-size: 0.9375rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Table Specific Styles */
+.table-container {
+    margin: 0;
+    padding: 0;
+    color: var(--text-primary); /* Make text white */
+
+}
+
+.table-container table {
+    min-width: 100%;
+}
+
+.table-container th {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    padding: 0.75rem 1rem;
+}
+
+.table-container td {
+    padding: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+/* Utility Classes */
+.text-success { color: var(--crypto-green); }
+.text-danger { color: var(--crypto-red); }
+
+/* CTA Section */
+.cta-section {
+    text-align: center;
+    padding: 4rem 0;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.cta-section h2 {
+    font-size: 2rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.cta-section p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+.cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.cta-buttons a[role="button"] {
+    min-width: 150px;
+}
+
+/* Auth Footer */
+.auth-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.auth-footer a {
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 0.875rem;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 3rem 0;
+    }
+
+    .hero-section h1 {
+        font-size: 2.25rem;
+    }
+
+    .auth-container {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+
+    .cta-buttons {
+        flex-direction: column;
+    }
+
+    .cta-buttons a[role="button"] {
+        width: 100%;
+    }
+
+    nav ul {
+        gap: 0.75rem;
+    }
+
+    .balance-amount {
+        font-size: 2rem;
+        color: var(--text-primary); /* Make balance white */
+    }
+}
+
+/* Animation for refresh button */
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.rotating {
+    animation: rotate 1s linear infinite;
+}

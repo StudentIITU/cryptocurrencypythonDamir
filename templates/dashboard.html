@@ -1,55 +1,258 @@
-{% extends 'layout.html' %}
+{% extends "layout.html" %}
 
-{% block body %}
-<h1>Welcome back, {{session.get('name')}}</h1>
-{% include 'includes/_messages.html' %}
-<p></p>
+{% block title %}Dashboard{% endblock %}
 
-<p> Your current balance is {{ balance }} SHK</p>
-<div class="card mb-3">
-  <div class="card-header">
-    <i class="fas fa-chart-area"></i>
-    Price of Shockwave (SHK)</div>
-  <div class="card-body">
-    <canvas id="myAreaChart" width="100%" height="30"></canvas>
-  </div>
-  <div class="card-footer small text-muted">Updated today at {{ct}}</div>
-</div>
+{% block content %}
+<div class="dashboard-container">
+    <div class="grid">
+        <!-- Balance Card -->
+        <article class="balance-card">
+            <header>
+                <i class="fas fa-wallet"></i>
+                <h3>Your Balance</h3>
+            </header>
+            <div class="balance-content">
+                <div class="balance-amount">
+                    <span class="currency">DW</span>
+                    <span class="amount">{{ "%.2f"|format(balance) }}</span>
+                </div>
+                <div class="balance-usd">
+                    ≈ ${{ "%.2f"|format(balance * current_price) }}
+                </div>
+                <div class="balance-actions">
+                    <a href="{{ url_for('add_funds') }}" role="button" class="outline">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Funds</span>
+                     </a>
+                    <a href="{{ url_for('transaction') }}" role="button">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Send</span>
+                    </a>
+                </div>
+            </div>
+        </article>
 
-<!-- DataTables Example -->
-<div class="card mb-3">
-  <div class="card-header">
-    <i class="fas fa-table"></i>
-    Blockchain</div>
-  <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Transaction</th>
-            <th>Hash</th>
-          </tr>
-        </thead>
-        <tfoot>
-          <tr>
-            <th>#</th>
-            <th>Transaction</th>
-            <th>Hash</th>
-          </tr>
-        </tfoot>
-        <tbody>
-          {% for block in blockchain %}
-            <tr>
-              <td>{{block.number}}</td>
-              <td>{{block.data}}</td>
-              <td>{{block.hash()}}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+        <!-- Chart Card -->
+        <article class="chart-card">
+            <header>
+                <div class="chart-header">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>Price Chart</h3>
+                </div>
+                <div class="timeframe-selector">
+                    <button class="timeframe-btn active" data-timeframe="1W">1W</button>
+                    <button class="timeframe-btn" data-timeframe="1M">1M</button>
+                    <button class="timeframe-btn" data-timeframe="3M">3M</button>
+                    <button class="timeframe-btn" data-timeframe="1Y">1Y</button>
+                </div>
+            </header>
+            <div class="chart-container">
+                <div class="loading-overlay">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <canvas id="priceChart"></canvas>
+            </div>
+            <footer>
+                Last updated: <span id="lastUpdate">{{ current_time }}</span>
+            </footer>
+        </article>
     </div>
-  </div>
-  <div class="card-footer small text-muted">Updated today at {{ct}}</div>
+
+    <!-- Transactions Card -->
+    <article class="transactions-card">
+        <header>
+            <div class="transactions-header">
+                <i class="fas fa-exchange-alt"></i>
+                <h3>Recent Transactions</h3>
+            </div>
+            <div class="transactions-actions">
+                <button id="refreshTransactions" class="icon-button">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                 <tbody>
+                    {% for tx in transactions %}
+                    <tr>
+                        <td>{{ tx.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            {% if tx.type == 'RECEIVED' %}
+                            <span class="transaction-type received">
+                                <i class="fas fa-arrow-down"></i>
+                                RECEIVED
+                            </span>
+                            {% else %}
+                            <span class="transaction-type sent">
+                                <i class="fas fa-arrow-up"></i>
+                                SENT
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="{{ 'text-success' if tx.type == 'RECEIVED' else 'text-danger' }}">
+                            {{ '+' if tx.type == 'RECEIVED' else '-' }}{{ tx.amount }} DW
+                        </td>
+                        <td>
+                            <span class="status-badge {{ tx.status.lower() }}">{{ tx.status }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <footer>
+            <a href="{{ url_for('transaction') }}" role="button" class="outline">View All Transactions</a>
+        </footer>
+    </article>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Add Chart.js CDN first -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize loading state
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    loadingOverlay.style.display = 'flex';
+
+    // Chart configuration
+    const ctx = document.getElementById('priceChart').getContext('2d');
+
+    // Set default Chart.js options for dark theme
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+
+    let priceChart;
+
+    function initializeChart() {
+        const chartConfig = {
+            type: 'line',
+            data: {
+                labels: {{ dates | tojson | safe }},
+                datasets: [{
+                    label: 'DamirWave Price (USD)',
+                    data: {{ prices | tojson | safe }},
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: '#f8fafc',
+                        bodyColor: '#e2e8f0',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return `$${context.raw.toFixed(2)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            maxRotation: 0,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)'
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            font: {
+                                size: 12
+                            },
+                            callback: function(value) {
+                                return `$${value.toFixed(2)}`;
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                animation: {
+                    duration: 1000
+                }
+            }
+        };
+
+        if (priceChart) {
+            priceChart.destroy();
+        }
+
+        priceChart = new Chart(ctx, chartConfig);
+        loadingOverlay.style.display = 'none';
+    }
+
+    // Initialize timeframe selector
+    const timeframeBtns = document.querySelectorAll('.timeframe-btn');
+    timeframeBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            timeframeBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            loadingOverlay.style.display = 'flex';
+
+            // Here you would typically fetch new data based on the timeframe
+            // For now, we'll simulate a data refresh
+            setTimeout(() => {
+                initializeChart();
+            }, 500);
+        });
+    });
+
+    // Initialize refresh button
+    const refreshBtn = document.getElementById('refreshTransactions');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            this.classList.add('rotating');
+            // Here you would typically fetch new transaction data
+            // For now, we'll just simulate a refresh
+            setTimeout(() => {
+                this.classList.remove('rotating');
+            }, 1000);
+        });
+    }
+
+    // Initialize chart with initial data
+    initializeChart();
+});
+</script>
 {% endblock %}

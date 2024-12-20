@@ -1,174 +1,359 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
-#import flask dependencies for web GUI
-from flask import Flask, render_template, flash, redirect, url_for, session, request, logging
+from pyexpat import features
+from urllib.parse import urlparse
+import logging
+from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from passlib.hash import sha256_crypt
-from flask_mysqldb import MySQL
-from functools import wraps
+import psycopg2
+from datetime import datetime, timedelta
+import random
+from sqlhelpers import Table, get_balance, send_money, get_db_connection, InsufficientFundsException, \
+    InvalidTransactionException, get_transaction_history
+from forms import RegisterForm, LoginForm, BuyForm, SendMoneyForm, SellForm
 
-#import other functions and classes
-from sqlhelpers import *
-from forms import *
-
-#other dependencies
-import time
-
-#initialize the app
+# Flask app configuration
 app = Flask(__name__)
+app.config.update(
+    SECRET_KEY='dev_key_here',
+    SESSION_COOKIE_SECURE=False,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    PERMANENT_SESSION_LIFETIME=timedelta(days=7),
+    SESSION_REFRESH_EACH_REQUEST=True
+)
 
-#configure mysql
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'gerome'
-app.config['MYSQL_DB'] = 'crypto'
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
-#initialize mysql
-mysql = MySQL(app)
 
-#wrap to define if the user is currently logged in from session
-def is_logged_in(f):
-    @wraps(f)
-    def wrap(*args, **kwargs):
-        if 'logged_in' in session:
-            return f(*args, **kwargs)
-        else:
-            flash("Unauthorized, please login.", "danger")
-            return redirect(url_for('login'))
-    return wrap
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Please log in to access this page.'
+login_manager.login_message_category = 'warning'
+login_manager.session_protection = "strong"
+login_manager.refresh_view = "login"
+login_manager.needs_refresh_message = "Please login again to confirm your identity"
+login_manager.needs_refresh_message_category = "info"
 
-#log in the user by updating session
-def log_in_user(username):
-    users = Table("users", "name", "email", "username", "password")
-    user = users.getone("username", username)
 
-    session['logged_in'] = True
-    session['username'] = username
-    session['name'] = user.get('name')
-    session['email'] = user.get('email')
+# User class for Flask-Login
+class User(UserMixin):
+    def __init__(self, user_data):
+        print(f"Creating user object with data: {user_data}")  # Debug print
+        self.id = str(user_data['username'])  # Must be username column
+        self.name = user_data['name']
+        self.email = user_data['email']
+        self.username = user_data['username']
+        self.balance = float(user_data.get('balance', 0.00))
 
-#Registration page
-@app.route("/register", methods = ['GET', 'POST'])
-def register():
-    form = RegisterForm(request.form)
-    users = Table("users", "name", "email", "username", "password")
+    def get_id(self):
+        print(f"get_id called, returning: {self.username}")  # Debug print
+        return str(self.username)
 
-    #if form is submitted
-    if request.method == 'POST' and form.validate():
-        #collect form data
-        username = form.username.data
-        email = form.email.data
-        name = form.name.data
+@login_manager.user_loader
+def load_user(user_id):
+    print(f"Loading user with ID: {user_id}")
+    try:
+        with get_db_connection() as conn:
+            users = Table(conn, "users", "name", "username", "email", "password", "balance")
+            # Ensure we're querying by username column
+            user_data = users.getone("username", user_id)
+            if user_data:
+                print(f"Found user data: {user_data['username']}")
+                return User(user_data)
+            print(f"No user found for username: {user_id}")
+    except Exception as e:
+        print(f"Error loading user: {e}")
+    return None
 
-        #make sure user does not already exist
-        if isnewuser(username):
-            #add the user to mysql and log them in
-            password = sha256_crypt.encrypt(form.password.data)
-            users.insert(name,email,username,password)
-            log_in_user(username)
-            return redirect(url_for('dashboard'))
-        else:
-            flash('User already exists', 'danger')
-            return redirect(url_for('register'))
 
-    return render_template('register.html', form=form)
 
-#Login page
-@app.route("/login", methods = ['GET', 'POST'])
+# Database connection
+try:
+    conn = psycopg2.connect(
+        host="localhost",
+        database="crypto",
+        user="postgres",
+        password="postgres"  # Replace with your password
+    )
+except psycopg2.Error as e:
+    print(f"Unable to connect to the database: {e}")
+    conn = None
+
+
+@app.route("/login", methods=['GET', 'POST'])
 def login():
-    #if form is submitted
     if request.method == 'POST':
-        #collect form data
         username = request.form['username']
-        candidate = request.form['password']
+        password = request.form['password']
 
-        #access users table to get the user's actual password
-        users = Table("users", "name", "email", "username", "password")
-        user = users.getone("username", username)
-        accPass = user.get('password')
+        print(f"Login attempt with username: {username}")  # Debug print
 
-        #if the password cannot be found, the user does not exist
-        if accPass is None:
-            flash("Username is not found", 'danger')
-            return redirect(url_for('login'))
-        else:
-            #verify that the password entered matches the actual password
-            if sha256_crypt.verify(candidate, accPass):
-                #log in the user and redirect to Dashboard page
-                log_in_user(username)
-                flash('You are now logged in.', 'success')
-                return redirect(url_for('dashboard'))
-            else:
-                #if the passwords do not match
-                flash("Invalid password", 'danger')
-                return redirect(url_for('login'))
+        try:
+            with get_db_connection() as conn:
+                users = Table(conn, "users", "name", "username", "email", "password", "balance")
+                user_data = users.getone("username", username)
+
+                if user_data and sha256_crypt.verify(password, user_data['password']):
+                    user = User(user_data)
+                    # Store username, not email
+                    result = login_user(user)
+                    print(f"Login result: {result}")  # Debug print
+                    print(f"User ID after login: {user.get_id()}")  # Debug print
+
+                    flash('Login successful!', 'success')
+                    return redirect(url_for('dashboard'))
+
+                flash('Invalid username or password', 'danger')
+        except Exception as e:
+            print(f"Login error: {e}")
+            flash('Login error occurred', 'danger')
 
     return render_template('login.html')
 
-#Transaction page
-@app.route("/transaction", methods = ['GET', 'POST'])
-@is_logged_in
-def transaction():
-    form = SendMoneyForm(request.form)
-    balance = get_balance(session.get('username'))
 
-    #if form is submitted
-    if request.method == 'POST':
-        try:
-            #attempt to execute the transaction
-            send_money(session.get('username'), form.username.data, form.amount.data)
-            flash("Money Sent!", "success")
-        except Exception as e:
-            flash(str(e), 'danger')
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    try:
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
 
-        return redirect(url_for('transaction'))
+        print(f"Current user in dashboard: {current_user.username}")
 
-    return render_template('transaction.html', balance=balance, form=form, page='transaction')
+        with get_db_connection() as conn:
+            balance = get_balance(current_user.username, conn)
 
-#Buy page
-@app.route("/buy", methods = ['GET', 'POST'])
-@is_logged_in
-def buy():
-    form = BuyForm(request.form)
-    balance = get_balance(session.get('username'))
+            # Generate price data
+            end_date = datetime.now()
+            dates = [(end_date - timedelta(days=i)).strftime('%Y-%m-%d')
+                    for i in range(7, -1, -1)]
+            prices = [round(random.uniform(10, 20), 2) for _ in range(8)]
+            current_price = prices[-1]
 
-    if request.method == 'POST':
-        #attempt to buy amount
-        try:
-            send_money("BANK", session.get('username'), form.amount.data)
-            flash("Purchase Successful!", "success")
-        except Exception as e:
-            flash(str(e), 'danger')
+            # Mock transaction data - replace with real data later
+            transactions = [
+                {
+                    'date': datetime.now() - timedelta(hours=2),
+                    'type': 'RECEIVED',
+                    'amount': 50.0,
+                    'status': 'COMPLETED'
+                },
+                {
+                    'date': datetime.now() - timedelta(hours=5),
+                    'type': 'SENT',
+                    'amount': 25.0,
+                    'status': 'PENDING'
+                }
+            ]
 
+            return render_template(
+                'dashboard.html',
+                balance=balance,
+                current_price=current_price,
+                current_time=datetime.now().strftime("%I:%M %p"),
+                dates=dates,
+                prices=prices,
+                transactions=transactions
+            )
+    except Exception as e:
+        print(f"Dashboard error: {e}")  # Debug print
+        flash('Error loading dashboard', 'danger')
+        return redirect(url_for('login'))
+
+# Add the missing routes
+@app.route("/add-funds", methods=['GET', 'POST'])
+@login_required
+def add_funds():
+    try:
+        if request.method == 'POST':
+            amount = float(request.form['amount'])
+            # Add funds logic here
+            flash('Funds added successfully!', 'success')
+            return redirect(url_for('dashboard'))
+        return render_template('add_funds.html')
+    except Exception as e:
+        flash('Error adding funds', 'danger')
         return redirect(url_for('dashboard'))
 
-    return render_template('buy.html', balance=balance, form=form, page='buy')
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
 
-#logout the user. Ends current session
+    form = RegisterForm(request.form)
+    if request.method == 'POST' and form.validate():
+        try:
+            name = form.name.data
+            username = form.username.data
+            email = form.email.data
+            password = sha256_crypt.hash(form.password.data)
+
+            if not conn:
+                flash('Database connection error', 'danger')
+                return render_template("register.html", form=form)
+
+            users = Table(conn, "users", "name", "email", "username", "password", "balance")
+
+            if users.getone("username", username):
+                flash('Username already exists', 'danger')
+                return render_template("register.html", form=form)
+
+            if users.getone("email", email):
+                flash('Email already registered', 'danger')
+                return render_template("register.html", form=form)
+
+            users.insert(name, email, username, password, 0.00)
+            user_data = users.getone("username", username)
+            user = User(user_data)
+            login_user(user)
+            session['logged_in'] = True
+            session['username'] = username
+            session['name'] = name
+            flash('Registration successful!', 'success')
+            return redirect(url_for('dashboard'))
+
+        except Exception as e:
+            flash(f'Registration failed: {str(e)}', 'danger')
+            return render_template("register.html", form=form)
+
+    return render_template("register.html", form=form)
+
+
 @app.route("/logout")
-@is_logged_in
+@login_required
 def logout():
+    logout_user()
     session.clear()
-    flash("Logout success", "success")
+    flash('You have been logged out', 'success')
     return redirect(url_for('login'))
 
-#Dashboard page
-@app.route("/dashboard")
-@is_logged_in
-def dashboard():
-    balance = get_balance(session.get('username'))
-    blockchain = get_blockchain().chain
-    ct = time.strftime("%I:%M %p")
-    return render_template('dashboard.html', balance=balance, session=session, ct=ct, blockchain=blockchain, page='dashboard')
-
-#Index page
-@app.route("/")
-@app.route("/index")
+@app.route("/check-session")
+def check_session():
+    return {
+        "is_authenticated": current_user.is_authenticated if hasattr(current_user, 'is_authenticated') else False,
+        "session": dict(session)
+    }
+@app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template("index.html", year=datetime.now().year)
 
-#Run app
+
+# In app.py
+
+@app.route("/transaction", methods=['GET', 'POST'])
+@login_required
+def transaction():
+    form = SendMoneyForm(request.form)
+
+    try:
+        with get_db_connection() as conn:
+            balance = get_balance(current_user.username, conn)
+
+            if request.method == 'POST':
+                app.logger.info(f"Processing transaction request from {current_user.username}")
+                app.logger.info(f"Form data: {request.form}")
+
+                recipient = request.form.get('recipient')
+                amount = request.form.get('amount')
+
+                try:
+                    # Process transaction
+                    send_money(current_user.username, recipient, float(amount))
+
+                    flash(f'Successfully sent {amount} DW to {recipient}', 'success')
+                    return redirect(url_for('dashboard'))
+
+                except InsufficientFundsException:
+                    flash('Insufficient funds for this transaction.', 'error')
+                except InvalidTransactionException as e:
+                    flash(str(e), 'error')
+                except Exception as e:
+                    app.logger.error(f"Transaction error: {str(e)}")
+                    flash('Transaction failed. Please try again.', 'error')
+
+            return render_template('transaction.html', form=form, balance=balance)
+
+    except Exception as e:
+        app.logger.error(f"Transaction page error: {str(e)}")
+        flash('Error loading transaction page', 'error')
+        return redirect(url_for('dashboard'))
+@app.route("/test-db")
+def test_db():
+    try:
+        with get_db_connection() as conn:
+            users = Table(conn, "users", "name", "email", "username", "password", "balance")
+            all_users = users.getall()
+            return f"Database connection successful. Found {len(all_users)} users."
+    except Exception as e:
+        return f"Database connection failed: {str(e)}"
+
+
+@app.route('/buy', methods=['GET', 'POST'])
+@login_required
+def buy():
+    form = BuyForm()
+    if request.method == 'POST':
+        try:
+            amount = form.amount.data
+            send_money("BANK", current_user.username, amount)
+            flash(f'Successfully bought {amount} DamirWave', 'success')
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            flash(str(e), 'danger')
+
+    return render_template('buy.html', form=form)
+
+
+@app.route('/sell', methods=['GET', 'POST'])
+@login_required
+def sell():
+    form = SellForm()
+    if request.method == 'POST':
+        try:
+            amount = form.amount.data
+            send_money(current_user.username, "BANK", amount)
+            flash(f'Successfully sold {amount} DamirWave', 'success')
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            flash(str(e), 'danger')
+
+    return render_template('sell.html', form=form)
+
+
+def init_db():
+    try:
+        # Create users table if it doesn't exist
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    name VARCHAR(100),
+                    email VARCHAR(100),
+                    username VARCHAR(100) PRIMARY KEY,
+                    password VARCHAR(100),
+                    balance NUMERIC DEFAULT 0.0
+                )
+            """)
+
+            # Create blockchain table if it doesn't exist
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS blockchain (
+                    number VARCHAR(100),
+                    hash VARCHAR(100),
+                    previous VARCHAR(100),
+                    data VARCHAR(100),
+                    nonce VARCHAR(100)
+                )
+            """)
+            conn.commit()
+            print("Database tables initialized successfully")
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+
+
 if __name__ == '__main__':
-    app.secret_key = 'secret123'
-    app.run(debug = True)
+    init_db()
+    app.run(debug=True)

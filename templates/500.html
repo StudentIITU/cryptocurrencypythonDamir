@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+
+{% block title %}Server Error{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <hgroup>
+        <h1>500</h1>
+        <h2>Server Error</h2>
+    </hgroup>
+    <p>Something went wrong on our end. Please try again later.</p>
+    <a href="{{ url_for('index') }}" role="button">Return Home</a>
+</div>
+{% endblock %}

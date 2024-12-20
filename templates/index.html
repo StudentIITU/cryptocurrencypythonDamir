@@ -1,72 +1,43 @@
-<!DOCTYPE html>
-<!-- ADAPTED FROM TEMPLATE at https://unpkg.com/-->
+{% extends "layout.html" %}
 
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Shockwave</title>
-    <link rel="shortcut icon" href="{{ url_for('static', filename = 'images/favicon.ico') }}">
-    <link href="https://fonts.googleapis.com/css?family=Lato:400,400i|PT+Serif:700" rel="stylesheet">
-    <link rel="stylesheet" href="/static/dist/css/style.css">
-    <script src="https://unpkg.com/scrollreveal@4.0.0/dist/scrollreveal.min.js"></script>
-</head>
+{% block title %}Home{% endblock %}
 
-<body class="is-boxed has-animations" style="height: 100%;">
-    <div class="body-wrap boxed-container">
-        <header class="site-header">
-            <div class="container">
-                <div class="site-header-inner">
-                    <div class="brand header-brand">
-                        <h1 class="m-0">
-                            <a href="#">
-                                <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                                    <title>Shockwave</title>
-                                    <defs>
-                                        <radialGradient cy="0%" fx="50%" fy="0%" r="100%" id="logo-gradient">
-                                            <stop stop-color="#FFF" offset="0%"></stop>
-                                            <stop stop-color="#FFF" stop-opacity=".24" offset="100%"></stop>
-                                        </radialGradient>
-                                    </defs>
-                                    <path d="M16 32C7.163 32 0 24.837 0 16S7.163 0 16 0s16 7.163 16 16-7.163 16-16 16zm0-10a6 6 0 1 0 0-12 6 6 0 0 0 0 12z" fill="url(#logo-gradient)" fill-rule="evenodd"></path>
-                                </svg>
-                            </a>
-                        </h1>
-                    </div>
-                    <ul class="header-links list-reset m-0">
-                        <li>
-                            <a href="/login">Login</a>
-                        </li>
-                        <li>
-                            <a class="button button-sm button-shadow" href="/register">Register</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </header>
+{% block content %}
+<section class="hero-section">
+    <hgroup>
+        <h1>DamirWave (DW) Cryptocurrency</h1>
+        <h2>Experience the future of digital transactions with our secure, efficient, and user-friendly cryptocurrency platform</h2>
+    </hgroup>
+</section>
 
-        <main>
-            <section class="hero text-light text-center">
-                <div class="container-sm">
-                    <div class="hero-inner">
-                        <h1 class="hero-title h2-mobile mt-0 is-revealing" style="visibility: visible;">Shockwave (SHK) Cryptocurrency</h1>
-                        <p class="hero-paragraph is-revealing" style="visibility: visible;">Shockwave is a cyrptocurrency implemented using python and flask. We simplify the use of sending money by our user-friendly interface and efficient servers.</p>
-                        <p class="hero-cta is-revealing" style="visibility: visible;"><a class="button button-secondary button-shadow" href="/register">Get started now</a></p>
+<main class="container">
+    <div class="features-grid">
+        <article>
+            <i class="fas fa-lock fa-2x"></i>
+            <h3>Secure Transactions</h3>
+            <p>Advanced blockchain technology ensuring your transactions are safe and transparent</p>
+        </article>
 
-                    </div>
-                </div>
-            </section>
+        <article>
+            <i class="fas fa-bolt fa-2x"></i>
+            <h3>Lightning Fast</h3>
+            <p>Experience near-instant transactions with our optimized network</p>
+        </article>
 
-        </main>
-
-        <footer class="site-footer">
-            <div class="container">
-
-            </div>
-        </footer>
+        <article>
+            <i class="fas fa-globe fa-2x"></i>
+            <h3>Global Access</h3>
+            <p>Send and receive money anywhere in the world without boundaries</p>
+        </article>
     </div>
-    <script src="/static/dist/js/main.min.js"></script>
 
-</body>
-</html>
+    <div class="cta-section">
+        <h2>Ready to get started?</h2>
+        <p>Join thousands of users already trading with DamirWave</p>
+        <div class="cta-buttons">
+            <a href="{{ url_for('register') }}" role="button">Create Account</a>
+            <a href="{{ url_for('login') }}" role="button" class="outline">Sign In</a>
+        </div>
+    </div>
+</main>
+{% endblock %}

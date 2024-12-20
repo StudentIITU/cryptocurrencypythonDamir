@@ -1,17 +1,68 @@
 {% extends 'layout.html' %}
 
-{% block body %}
-{% include 'includes/_messages.html' %}
-<p>Your current balance is {{ balance }} SHK</p>
-{% from "includes/_formhelpers.html" import render_field %}
-<form method="POST" action="">
-  <div class="from-group">
-    {{render_field(form.username, class_="form-control")}}
-  </div>
-  <div class="from-group">
-    {{render_field(form.amount, class_="form-control")}}
-  </div>
-  </br>
-  <p><input type="submit" class="btn btn-primary" value="Send"></p>
-</form>
+{% block title %}Send DamirWave{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <article>
+        <header>
+            <i class="fas fa-paper-plane"></i>
+            <h3>Send DamirWave</h3>
+        </header>
+
+        {% include 'includes/_messages.html' %}
+
+        <div class="balance-info">
+            <h4>Available Balance</h4>
+            <div class="balance-amount">
+                <span class="currency">DW</span>
+                <span class="amount">{{ "%.2f"|format(balance) }}</span>
+            </div>
+        </div>
+
+        <form method="POST" action="" class="auth-form">
+
+            <div class="form-group">
+                <i class="fas fa-user"></i>
+                <input type="text" name="recipient" placeholder="Recipient Username" required
+                       value="{{ form.recipient.data if form.recipient.data }}">
+            </div>
+            <div class="form-group">
+                <i class="fas fa-coins"></i>
+                <input type="number" step="0.01" min="0.01" name="amount" placeholder="Amount" required
+                       value="{{ form.amount.data if form.amount.data }}">
+            </div>
+            <button type="submit">
+                <i class="fas fa-paper-plane"></i> Send DamirWave
+            </button>
+        </form>
+    </article>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.balance-info {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.balance-info h4 {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+</style>
 {% endblock %}

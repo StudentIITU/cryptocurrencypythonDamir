@@ -1,15 +1,21 @@
 {% extends 'layout.html' %}
 
-{% block body %}
-{% include 'includes/_messages.html' %}
-<p>Your current balance is {{ balance }} SHK</p>
-{% from "includes/_formhelpers.html" import render_field %}
-<form action="" method="POST">
-  <div class="form-group">
-    <div class="form-label-group">
-      {{render_field(form.amount, class_="form-control")}}
-    </div>
-  </div>
-  <button type="submit" class="btn btn-primary btn-block">Buy Now</button>
-</form>
+{% block title %}Buy SHK{% endblock %}
+
+{% block content %}
+<article>
+    <header>
+        <h2>Buy Shockwave (SHK)</h2>
+    </header>
+
+    {% include 'includes/_messages.html' %}
+
+    <p>Your current balance is {{ balance }} SHK</p>
+
+    {% from "includes/_formhelpers.html" import render_field %}
+    <form action="" method="POST">
+        {{ render_field(form.amount, placeholder="Amount") }}
+        <button type="submit" class="contrast">Buy Now</button>
+    </form>
+</article>
 {% endblock %}
